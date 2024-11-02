@@ -16,6 +16,9 @@
 #include "v8config.h"  // NOLINT(build/include_directory)
 
 namespace cppgc {
+
+class Visitor;
+
 namespace internal {
 
 // PersistentBase always refers to the object as const object and defers to
@@ -75,7 +78,7 @@ class BasicPersistent final : public PersistentBase,
       : PersistentBase(raw), LocationPolicy(loc) {
     if (!IsValid()) return;
     SetNode(WeaknessPolicy::GetPersistentRegion(GetValue())
-                .AllocateNode(this, &TraceAsRoot));
+                .AllocateNode(this, &BasicPersistent::Trace));
     this->CheckPointer(Get());
   }
 
@@ -218,8 +221,9 @@ class BasicPersistent final : public PersistentBase,
   }
 
  private:
-  static void TraceAsRoot(RootVisitor& root_visitor, const void* ptr) {
-    root_visitor.Trace(*static_cast<const BasicPersistent*>(ptr));
+  static void Trace(Visitor* v, const void* ptr) {
+    const auto* persistent = static_cast<const BasicPersistent*>(ptr);
+    v->TraceRoot(*persistent, persistent->Location());
   }
 
   bool IsValid() const {
@@ -243,7 +247,7 @@ class BasicPersistent final : public PersistentBase,
     SetValue(ptr);
     if (!IsValid()) return;
     SetNode(WeaknessPolicy::GetPersistentRegion(GetValue())
-                .AllocateNode(this, &TraceAsRoot));
+                .AllocateNode(this, &BasicPersistent::Trace));
     this->CheckPointer(Get());
   }
 
@@ -260,7 +264,7 @@ class BasicPersistent final : public PersistentBase,
     return static_cast<T*>(const_cast<void*>(GetValue()));
   }
 
-  friend class internal::RootVisitor;
+  friend class cppgc::Visitor;
 };
 
 template <typename T1, typename WeaknessPolicy1, typename LocationPolicy1,

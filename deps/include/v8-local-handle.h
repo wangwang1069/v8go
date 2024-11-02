@@ -53,7 +53,6 @@ class Utils;
 namespace internal {
 template <typename T>
 class CustomArguments;
-class SamplingHeapProfiler;
 }  // namespace internal
 
 namespace api_internal {
@@ -314,7 +313,6 @@ class Local {
   friend class BasicTracedReference;
   template <class F>
   friend class TracedReference;
-  friend class v8::internal::SamplingHeapProfiler;
 
   explicit V8_INLINE Local(T* that) : val_(that) {}
   V8_INLINE static Local<T> New(Isolate* isolate, T* that) {
@@ -356,7 +354,7 @@ class MaybeLocal {
 
   /**
    * Converts this MaybeLocal<> to a Local<>. If this MaybeLocal<> is empty,
-   * |false| is returned and |out| is assigned with nullptr.
+   * |false| is returned and |out| is left untouched.
    */
   template <class S>
   V8_WARN_UNUSED_RESULT V8_INLINE bool ToLocal(Local<S>* out) const {

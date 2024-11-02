@@ -21,7 +21,6 @@
 namespace cppgc {
 
 class AllocationHandle;
-class HeapHandle;
 
 /**
  * Implementation details of cppgc. Those details are considered internal and
@@ -31,6 +30,11 @@ class HeapHandle;
 namespace internal {
 class Heap;
 }  // namespace internal
+
+/**
+ * Used for additional heap APIs.
+ */
+class HeapHandle;
 
 class V8_EXPORT Heap {
  public:

@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "cppgc/internal/member-storage.h"
 #include "cppgc/internal/write-barrier.h"
 #include "cppgc/sentinel-pointer.h"
 #include "cppgc/source-location.h"
@@ -28,44 +27,15 @@ class WeakMemberTag;
 class UntracedMemberTag;
 
 struct DijkstraWriteBarrierPolicy {
-  V8_INLINE static void InitializingBarrier(const void*, const void*) {
+  static void InitializingBarrier(const void*, const void*) {
     // Since in initializing writes the source object is always white, having no
     // barrier doesn't break the tri-color invariant.
   }
-
-  V8_INLINE static void AssigningBarrier(const void* slot, const void* value) {
-#ifdef CPPGC_SLIM_WRITE_BARRIER
-    if (V8_UNLIKELY(WriteBarrier::IsEnabled()))
-      WriteBarrier::CombinedWriteBarrierSlow(slot);
-#else   // !CPPGC_SLIM_WRITE_BARRIER
+  static void AssigningBarrier(const void* slot, const void* value) {
     WriteBarrier::Params params;
-    const WriteBarrier::Type type =
-        WriteBarrier::GetWriteBarrierType(slot, value, params);
-    WriteBarrier(type, params, slot, value);
-#endif  // !CPPGC_SLIM_WRITE_BARRIER
-  }
-
-  V8_INLINE static void AssigningBarrier(const void* slot,
-                                         MemberStorage storage) {
-#ifdef CPPGC_SLIM_WRITE_BARRIER
-    if (V8_UNLIKELY(WriteBarrier::IsEnabled()))
-      WriteBarrier::CombinedWriteBarrierSlow(slot);
-#else   // !CPPGC_SLIM_WRITE_BARRIER
-    WriteBarrier::Params params;
-    const WriteBarrier::Type type =
-        WriteBarrier::GetWriteBarrierType(slot, storage, params);
-    WriteBarrier(type, params, slot, storage.Load());
-#endif  // !CPPGC_SLIM_WRITE_BARRIER
-  }
-
- private:
-  V8_INLINE static void WriteBarrier(WriteBarrier::Type type,
-                                     const WriteBarrier::Params& params,
-                                     const void* slot, const void* value) {
-    switch (type) {
+    switch (WriteBarrier::GetWriteBarrierType(slot, value, params)) {
       case WriteBarrier::Type::kGenerational:
-        WriteBarrier::GenerationalBarrier<
-            WriteBarrier::GenerationalBarrierType::kPreciseSlot>(params, slot);
+        WriteBarrier::GenerationalBarrier(params, slot);
         break;
       case WriteBarrier::Type::kMarking:
         WriteBarrier::DijkstraMarkingBarrier(params, value);
@@ -77,9 +47,8 @@ struct DijkstraWriteBarrierPolicy {
 };
 
 struct NoWriteBarrierPolicy {
-  V8_INLINE static void InitializingBarrier(const void*, const void*) {}
-  V8_INLINE static void AssigningBarrier(const void*, const void*) {}
-  V8_INLINE static void AssigningBarrier(const void*, MemberStorage) {}
+  static void InitializingBarrier(const void*, const void*) {}
+  static void AssigningBarrier(const void*, const void*) {}
 };
 
 class V8_EXPORT SameThreadEnabledCheckingPolicyBase {
@@ -120,7 +89,7 @@ class V8_EXPORT SameThreadEnabledCheckingPolicy
 
 class DisabledCheckingPolicy {
  protected:
-  V8_INLINE void CheckPointer(const void*) {}
+  void CheckPointer(const void*) {}
 };
 
 #ifdef DEBUG
