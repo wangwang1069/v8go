@@ -91,20 +91,23 @@ def get_latest_v8_info():
 current_v8_version_installed = read_v8_version_file(deps_path)
 
 # Get latest version
-latest_v8_info = get_latest_v8_info()
+# latest_v8_info = get_latest_v8_info()
 
-latest_stable_v8_version = latest_v8_info[0]["versions"][0]["v8_version"]
+# latest_stable_v8_version = latest_v8_info[0]["versions"][0]["v8_version"]
 
-if current_v8_version_installed != latest_stable_v8_version:
-  subprocess.check_call(["git", "fetch", "origin", latest_stable_v8_version],
+#target v8 version
+target_v8_version = "10.3.91"
+
+if current_v8_version_installed != target_v8_version:
+  subprocess.check_call(["git", "fetch", "origin", target_v8_version],
                         cwd=v8_path,
                         env=env)
   # checkout latest stable commit
-  subprocess.check_call(["git", "checkout", latest_stable_v8_version],
+  subprocess.check_call(["git", "checkout", target_v8_version],
                         cwd=v8_path,
                         env=env)
 
   shutil.rmtree(deps_include_path)
   shutil.copytree(v8_include_path, deps_include_path, dirs_exist_ok=True)
   create_vendor_files(deps_include_path)
-  update_v8_version_file(deps_path, latest_stable_v8_version)
+  update_v8_version_file(deps_path, target_v8_version)
